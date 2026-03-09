@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import ArchitectureCanvas from './components/Canvas';
 import Toolbar from './components/Toolbar';
 import NodePanel from './components/NodePanel';
+import MLLayerPanel from './components/MLLayerPanel';
 import EdgePanel from './components/EdgePanel';
 import Terminal from './components/Terminal';
 import ProjectDashboard from './components/ProjectDashboard';
@@ -27,6 +28,7 @@ export default function App() {
 
   const sidebarOpen = useStore((s) => s.sidebarOpen);
   const theme = useStore((s) => s.theme);
+  const workspaceMode = useStore((s) => s.workspaceMode);
 
   // Set data-theme on mount so CSS variables match the store
   useEffect(() => {
@@ -150,7 +152,10 @@ export default function App() {
         </div>
 
         <ErrorBoundary name="Panel">
-          {panelOpen && panelMode === 'node' && (
+          {panelOpen && panelMode === 'node' && workspaceMode === 'ml' && (
+            <MLLayerPanel />
+          )}
+          {panelOpen && panelMode === 'node' && workspaceMode === 'infra' && (
             <NodePanel sendToTerminal={sendToTerminal} />
           )}
           {panelOpen && panelMode === 'edge' && (

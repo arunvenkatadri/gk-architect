@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import useStore, { NODE_TYPES } from '../store';
 import FileBrowser from './FileBrowser';
+import AgentProgramEditor from './AgentProgramEditor';
 
 const STATUS_OPTIONS = [
   { value: 'not_started', label: 'Not Started', color: '#6b7280' },
@@ -18,6 +19,9 @@ export default function NodePanel({ sendToTerminal }) {
   const deleteSelectedNodes = useStore((s) => s.deleteSelectedNodes);
   const setPanelOpen = useStore((s) => s.setPanelOpen);
   const getBuildContext = useStore((s) => s.getBuildContext);
+  const agentPrograms = useStore((s) => s.agentPrograms);
+
+  const [showAgentEditor, setShowAgentEditor] = useState(false);
 
   const isMultiSelect = selectedNodeIds.length > 1;
   const selectedNodeId = selectedNodeIds[0] || null;
@@ -245,6 +249,20 @@ export default function NodePanel({ sendToTerminal }) {
               </div>
             </div>
 
+            {/* Agent Program */}
+            <div>
+              <button
+                onClick={() => setShowAgentEditor(true)}
+                className={`w-full px-3 py-2 rounded text-xs transition-colors ${
+                  agentPrograms[selectedNodeId]
+                    ? 'bg-purple-900/30 text-purple-400 border border-purple-800/50 hover:bg-purple-900/50'
+                    : 'bg-surface text-gray-400 hover:bg-accent hover:text-white'
+                }`}
+              >
+                {agentPrograms[selectedNodeId] ? `Agent: ${agentPrograms[selectedNodeId].name} (${agentPrograms[selectedNodeId].status})` : '+ Attach Agent Program'}
+              </button>
+            </div>
+
             {/* Delete */}
             <button
               onClick={handleDelete}
@@ -429,6 +447,14 @@ export default function NodePanel({ sendToTerminal }) {
           </>
         )}
       </div>
+
+      {showAgentEditor && selectedNodeId && (
+        <AgentProgramEditor
+          nodeId={selectedNodeId}
+          onClose={() => setShowAgentEditor(false)}
+          sendToTerminal={sendToTerminal}
+        />
+      )}
     </div>
   );
 }

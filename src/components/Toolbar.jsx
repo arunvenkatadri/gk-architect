@@ -1,5 +1,6 @@
 import React, { useCallback, useState } from 'react';
 import useStore, { NODE_TYPES } from '../store';
+import MLToolbar from './MLToolbar';
 import TemplateModal from './TemplateModal';
 import ExportModal from './ExportModal';
 import BuildOrchestrator from './BuildOrchestrator';
@@ -7,6 +8,9 @@ import ServerManager from './ServerManager';
 import DeployPanel from './DeployPanel';
 import OpsPanel from './OpsPanel';
 import ExternalServiceModal from './ExternalServiceModal';
+import TrainingConfig from './TrainingConfig';
+import AutoResearch from './AutoResearch';
+import AgentDashboard from './AgentDashboard';
 
 export default function Toolbar({ sendToTerminal }) {
   const [showTemplates, setShowTemplates] = useState(false);
@@ -16,6 +20,9 @@ export default function Toolbar({ sendToTerminal }) {
   const [showDeploy, setShowDeploy] = useState(false);
   const [showOps, setShowOps] = useState(false);
   const [showExternal, setShowExternal] = useState(false);
+  const [showTraining, setShowTraining] = useState(false);
+  const [showResearch, setShowResearch] = useState(false);
+  const [showAgents, setShowAgents] = useState(false);
   const addNode = useStore((s) => s.addNode);
   const serialize = useStore((s) => s.serialize);
   const deserialize = useStore((s) => s.deserialize);
@@ -25,6 +32,10 @@ export default function Toolbar({ sendToTerminal }) {
   const toggleSidebar = useStore((s) => s.toggleSidebar);
   const theme = useStore((s) => s.theme);
   const toggleTheme = useStore((s) => s.toggleTheme);
+  const workspaceMode = useStore((s) => s.workspaceMode);
+  const setWorkspaceMode = useStore((s) => s.setWorkspaceMode);
+  const agentPrograms = useStore((s) => s.agentPrograms);
+  const runningAgentCount = Object.values(agentPrograms).filter(a => a.status === 'running').length;
 
   const handleAddNode = useCallback(
     (type) => {
@@ -88,40 +99,90 @@ export default function Toolbar({ sendToTerminal }) {
         Files
       </button>
 
-      {/* Node type buttons */}
-      <div className="flex items-center gap-1 mr-4">
-        <span className="text-xs text-secondary mr-2">Add:</span>
-        {Object.entries(NODE_TYPES).map(([key, { label, color }]) => (
-          <button
-            key={key}
-            onClick={() => handleAddNode(key)}
-            draggable
-            onDragStart={(e) => {
-              e.dataTransfer.setData('application/gk-node-type', key);
-              e.dataTransfer.effectAllowed = 'move';
-            }}
-            className="px-3 py-1 rounded text-xs font-medium transition-all hover:brightness-110 hover:scale-105 cursor-grab active:cursor-grabbing"
-            style={{ backgroundColor: color + '33', color, border: `1px solid ${color}55` }}
-          >
-            {label}
-          </button>
-        ))}
+      {/* Mode toggle */}
+      <div className="flex items-center bg-surface rounded overflow-hidden mr-2">
         <button
-          onClick={() => setShowExternal(true)}
-          className="px-3 py-1 rounded text-xs font-medium transition-all hover:brightness-110 border border-dashed border-gray-500 text-gray-400 hover:border-accent hover:text-accent"
+          onClick={() => setWorkspaceMode('infra')}
+          className={`px-2.5 py-1 text-xs font-medium transition-colors ${
+            workspaceMode === 'infra' ? 'bg-accent text-white' : 'text-secondary hover:text-white'
+          }`}
         >
-          + External
+          Infra
+        </button>
+        <button
+          onClick={() => setWorkspaceMode('ml')}
+          className={`px-2.5 py-1 text-xs font-medium transition-colors ${
+            workspaceMode === 'ml' ? 'bg-accent text-white' : 'text-secondary hover:text-white'
+          }`}
+        >
+          ML
         </button>
       </div>
 
-      {/* Build All */}
-      <button
-        onClick={() => setShowBuildAll(true)}
-        className="px-3 py-1 rounded text-xs font-semibold bg-accent/20 text-accent border border-accent/30 hover:bg-accent/30 transition-colors"
-        title="Build all components in dependency order"
-      >
-        Build All
-      </button>
+      {/* Node type buttons (infra mode) */}
+      {workspaceMode === 'infra' && (
+        <div className="flex items-center gap-1 mr-4">
+          <span className="text-xs text-secondary mr-2">Add:</span>
+          {Object.entries(NODE_TYPES).map(([key, { label, color }]) => (
+            <button
+              key={key}
+              onClick={() => handleAddNode(key)}
+              draggable
+              onDragStart={(e) => {
+                e.dataTransfer.setData('application/gk-node-type', key);
+                e.dataTransfer.effectAllowed = 'move';
+              }}
+              className="px-3 py-1 rounded text-xs font-medium transition-all hover:brightness-110 hover:scale-105 cursor-grab active:cursor-grabbing"
+              style={{ backgroundColor: color + '33', color, border: `1px solid ${color}55` }}
+            >
+              {label}
+            </button>
+          ))}
+          <button
+            onClick={() => setShowExternal(true)}
+            className="px-3 py-1 rounded text-xs font-medium transition-all hover:brightness-110 border border-dashed border-gray-500 text-gray-400 hover:border-accent hover:text-accent"
+          >
+            + External
+          </button>
+        </div>
+      )}
+
+      {/* ML layer buttons (ml mode) */}
+      {workspaceMode === 'ml' && (
+        <div className="flex items-center gap-1 mr-4">
+          <span className="text-xs text-secondary mr-2">Add:</span>
+          <MLToolbar />
+        </div>
+      )}
+
+      {/* Infra actions */}
+      {workspaceMode === 'infra' && (
+        <button
+          onClick={() => setShowBuildAll(true)}
+          className="px-3 py-1 rounded text-xs font-semibold bg-accent/20 text-accent border border-accent/30 hover:bg-accent/30 transition-colors"
+          title="Build all components in dependency order"
+        >
+          Build All
+        </button>
+      )}
+
+      {/* ML actions */}
+      {workspaceMode === 'ml' && (
+        <>
+          <button
+            onClick={() => setShowTraining(true)}
+            className="px-3 py-1 rounded text-xs font-semibold bg-purple-900/30 text-purple-400 border border-purple-800/50 hover:bg-purple-900/50 transition-colors"
+          >
+            Training
+          </button>
+          <button
+            onClick={() => setShowResearch(true)}
+            className="px-3 py-1 rounded text-xs font-semibold bg-orange-900/30 text-orange-400 border border-orange-800/50 hover:bg-orange-900/50 transition-colors"
+          >
+            Autoresearch
+          </button>
+        </>
+      )}
       <button
         onClick={() => setShowServers(true)}
         className="px-3 py-1 rounded text-xs bg-surface hover:bg-accent transition-colors"
@@ -139,6 +200,17 @@ export default function Toolbar({ sendToTerminal }) {
         className="px-3 py-1 rounded text-xs font-semibold bg-blue-900/30 text-blue-400 border border-blue-800/50 hover:bg-blue-900/50 transition-colors"
       >
         Ops
+      </button>
+      <button
+        onClick={() => setShowAgents(true)}
+        className="px-3 py-1 rounded text-xs font-semibold bg-purple-900/30 text-purple-400 border border-purple-800/50 hover:bg-purple-900/50 transition-colors relative"
+      >
+        Agents
+        {runningAgentCount > 0 && (
+          <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-green-500 text-white text-[10px] flex items-center justify-center">
+            {runningAgentCount}
+          </span>
+        )}
       </button>
 
       <div className="flex-1" />
@@ -212,6 +284,15 @@ export default function Toolbar({ sendToTerminal }) {
       )}
       {showExternal && (
         <ExternalServiceModal onClose={() => setShowExternal(false)} />
+      )}
+      {showTraining && (
+        <TrainingConfig onClose={() => setShowTraining(false)} sendToTerminal={sendToTerminal} />
+      )}
+      {showResearch && (
+        <AutoResearch onClose={() => setShowResearch(false)} sendToTerminal={sendToTerminal} />
+      )}
+      {showAgents && (
+        <AgentDashboard onClose={() => setShowAgents(false)} sendToTerminal={sendToTerminal} />
       )}
     </div>
   );
